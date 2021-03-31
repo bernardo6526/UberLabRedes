@@ -30,7 +30,7 @@ public class Motorista {
 					break;
 				case 1:
 					int newPort = conexaoInicial(idClient,tipoUser,ocupado,latitude,longitude);
-					conexao(idClient,tipoUser,ocupado,newPort);
+					conexao(idClient,tipoUser,ocupado,latitude,longitude,newPort);
 					break;
 				default:
 					System.out.println("comando não reconhecido");
@@ -45,12 +45,12 @@ public class Motorista {
 	}
 
 	public static int conexaoInicial(int idClient, String tipoUser,boolean ocupado,double latitude,double longitude) throws Exception {
-        System.out.println("Procurando motorista...");
+        System.out.println("Conectando ao servidor Uber...");
 		
 		// ENDEREÇO DO SERVIDOR
 		String IPServidor = "25.19.211.24";
 		int PortaServidor = 6000;
-		int PortaCliente = 6001;
+		int PortaCliente = 6002;
 
 		// ESTABELECE UM SERVIÇO UDP NA PORTA ESPECIFICADA
 		DatagramSocket ds = new DatagramSocket(PortaCliente);
@@ -81,13 +81,13 @@ public class Motorista {
 
 		// FINALIZA O SERVIÇO UDP
 		ds.close();
-		System.out.println("-C- Conexao finalizada...");
+		System.out.println("-C- Conexao Inicial finalizada...");
 
 		return newPort; // retorna o valor da porta
 	}
 
-	public static int conexao(int idClient, String tipoUser,boolean ocupado, int newPort) throws Exception {
-        System.out.println("Procurando motorista...");
+	public static int conexao(int idClient, String tipoUser,boolean ocupado, double latitude, double longitude, int newPort) throws Exception {
+        System.out.println("Procurando usuario...");
 		
 		// ENDEREÇO DO SERVIDOR
 		String IPServidor = "25.19.211.24";
@@ -99,7 +99,7 @@ public class Motorista {
 		System.out.println("-C- Cliente estabelecendo servico UDP (P" + PortaCliente + ")...");
 
 		// CRIA UM PACOTE E ENVIA PARA O SERVIDOR
-		String strEnvio = idClient+"/"+tipoUser+"/"+ocupado;
+		String strEnvio = idClient+"/"+tipoUser+"/"+ocupado+"/"+latitude+"/"+longitude;
 		byte[] bytEnvio = strEnvio.getBytes();
 		DatagramPacket pktEnvio = new DatagramPacket(bytEnvio, bytEnvio.length, InetAddress.getByName(IPServidor),
 				PortaServidor);

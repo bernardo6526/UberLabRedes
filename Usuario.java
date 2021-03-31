@@ -12,12 +12,14 @@ public class Usuario {
             int idClient= (int)(Math.random() * (10000 - 1 + 1) + 1);
             String tipoUser = "usuario";
             boolean ocupado = false;
+			double latitude= (Math.random() * (20000 - 1 + 1) + 1);
+			double longitude= (Math.random() * (20000 - 1 + 1) + 1);
             
             //System.out.println("sou o client: "+idClient);
 			Scanner sc = new Scanner(System.in); // Create a Scanner object
 			int comando;
 			boolean exit = false;
-			System.out.println("Iniciando o Uber usuário");
+			System.out.println("Iniciando o Uber "+tipoUser);
 
 			while (!exit) {
 				System.out.println("0-Sair\n1-Chamar Uber\n");
@@ -27,7 +29,7 @@ public class Usuario {
 					exit = true;
 					break;
 				case 1:
-					int newPort = conexaoInicial(idClient,tipoUser,ocupado);
+					int newPort = conexaoInicial(idClient,tipoUser,ocupado,latitude,longitude);
 					conexao(idClient,tipoUser,ocupado,newPort);
 					break;
 				default:
@@ -42,7 +44,7 @@ public class Usuario {
 		}
 	}
 
-	public static int conexaoInicial(int idClient, String tipoUser,boolean ocupado) throws Exception {
+	public static int conexaoInicial(int idClient, String tipoUser,boolean ocupado,double latitude,double longitude) throws Exception {
         System.out.println("Procurando motorista...");
 		
 		// ENDEREÇO DO SERVIDOR
@@ -55,7 +57,7 @@ public class Usuario {
 		System.out.println("-C- Cliente estabelecendo servico UDP (P" + PortaCliente + ")...");
 
 		// CRIA UM PACOTE E ENVIA PARA O SERVIDOR
-		String strEnvio = idClient+"/"+tipoUser+"/"+ocupado;
+		String strEnvio = idClient+"/"+tipoUser+"/"+ocupado+"/"+latitude+"/"+longitude;
 		byte[] bytEnvio = strEnvio.getBytes();
 		DatagramPacket pktEnvio = new DatagramPacket(bytEnvio, bytEnvio.length, InetAddress.getByName(IPServidor),
 				PortaServidor);

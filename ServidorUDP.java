@@ -1,6 +1,7 @@
 
 import java.net.*;
 import java.io.*;
+import java.util.ArrayList;
 
 public class ServidorUDP {
 	// METODO PRINCIPAL DA CLASSE
@@ -26,8 +27,10 @@ class ClienteHandler extends Thread {
 	private String tipoUser;
 	private int idClient;
 	private boolean ocupado; // define se o client ja foi associado a outro client
-	//final DatagramSocket ds;
 	private static int serverPort;
+
+	//salva as informações enviadas pelo pacote inicial de cada cliente
+	private static ArrayList<DatagramPacket> clientes = new ArrayList<DatagramPacket>();
 
 	public ClienteHandler() {
 		
@@ -46,6 +49,8 @@ class ClienteHandler extends Thread {
 			DatagramPacket pktRec = new DatagramPacket(bytRec, bytRec.length);
 			System.out.println("-S- Recebendo mensagem...");
 			ds.receive(pktRec);
+
+			clientes.add(pktRec); //salva o pacote no array de clientes
 
 			// PROCESSA O PACOTE RECEBIDO
 			bytRec = pktRec.getData();
@@ -84,23 +89,49 @@ class ClienteHandler extends Thread {
 			
 			//ESTABELECE UM SERVIÇO UDP NA NOVA PORTA ESPECIFICADA
 			DatagramSocket ds = new DatagramSocket(serverPort);
-			System.out.println("-S- Servidor estabelecendo servico UDP (P:" + serverPort + ")...");
+			//System.out.println("-S- Servidor estabelecendo servico UDP (P:" + serverPort + ")...");
 
 			// CRIA UM PACOTE
 			byte[] bytRec = new byte[100];
 			// RECEBE DADOS DO CLIENTE
 			DatagramPacket pktRec = new DatagramPacket(bytRec, bytRec.length);
-			System.out.println("-S- Recebendo mensagem...");
+			//System.out.println("-S- Recebendo mensagem...");
 			ds.receive(pktRec);
 
 			// PROCESSA O PACOTE RECEBIDO
 			bytRec = pktRec.getData();
 			String strMsg = new String(bytRec, 0, bytRec.length);
-			System.out.println("-S- Mensagem recebida: " + strMsg);
+			//System.out.println("-S- Mensagem recebida: " + strMsg);
 
 			// Pega dados do Cliente
 			InetAddress ipRet = pktRec.getAddress();
 			int portaRet = pktRec.getPort();
+			//---------------------------------------------------------
+			//processa o pacote recebido
+			String[] usuario = pktProcessor(pktRec);
+			//cria um pacote para receber infos do motorista mais próximo
+			DatagramPacket motoristaMaisProximo;
+			// Procura por motorista mais próximo
+			boolean motoristaDisponivel = false;
+			while(!motoristaDisponivel){
+				double menorDist = 1000000;
+				for (DatagramPacket pacote : clientes) { 		      
+					String[] info = pktProcessor(pacote); // processa o pacote num array de string
+					//0idClient,1tipoUser,2ocupado,3latitude,4longitude
+
+					//se achar motorista que não esteja ocupado calcula a distancia
+					if(info[2].equals("motorista") && !Boolean.parseBoolean(info[3])){
+						motoristaDisponivel = true;
+						double dist = calcDist(usuario,info);						
+						//armazena o motorista mais proximo
+						if(dist < menorDist){
+							menorDist = dist;
+							motoristaMaisProximo = pacote;
+						}
+					}
+
+				}
+			}	
 
 			// CRIA UM PACOTE de RETORNO -> adicionar informações da porta nova que o client pode se conectar
 			String strMsgRet = "RETORNO - " + strMsg;
@@ -136,5 +167,24 @@ class ClienteHandler extends Thread {
 		{
 			System.out.println("-S- O seguinte problema ocorreu : \n" + e.toString());
 		}
+	}
+
+	public static String[] pktProcessor(DatagramPacket pacote){
+		byte[] dadosPacote = new byte[100];
+		dadosPacote = pacote.getData(); // preenche o vetor de bytes com os dados do pacote
+		String mensagem = new String(dadosPacote, 0, dadosPacote.length); //converte os dados para string
+		mensagem = mensagem.trim(); // remove espaços em branco no final da string
+		String[] info = mensagem.split("/"); //separa a string em idClient,tipoUser,ocupado,latitude,longitude;
+		return info;
+	}
+
+	//0idClient,1tipoUser,2ocupado,3latitude,4longitude
+	//Calcula a distancia entre usuario e motorista
+	public static double calcDist(String[] usuario, String[] motorista) {
+		double x1 = Integer.parseInt(usuario[3]);
+		double y1 = Integer.parseInt(usuario[4]);
+		double x2 = Integer.parseInt(motorista[3]);
+		double y2 = Integer.parseInt(motorista[4]);       
+    	return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
 	}
 }

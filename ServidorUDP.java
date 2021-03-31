@@ -135,6 +135,9 @@ class ClienteHandler extends Thread {
 			}	
 
 			//inicia corrida marcando o motorista e o usuario como ocupados
+			//OBS.: essa parte deve estar num método synchronized, ou seja, numa região crítica
+			//pois o array de pacotes está sendo alterado simultaneamente, gerando o erro
+			//java.util.concurrentmodificationexception
 			/*depois disso é preciso fazer um codigo do motorista que fica ouvindo seu proprio status
 			  do servidor, e quando ele ver que ficou como ocupado irá receber mensagens do servidor com
 			  a localização do usuario

@@ -5,6 +5,9 @@ import java.util.Scanner;
 
 public class Usuario {
 
+/*ideia : fazer um switch case que faz o cliente agir de forma diferente com base na mensagem recebida
+  pelo pacote enviado pelo servidor.
+*/
     // MÉTODO PRINCIPAL DA CLASSE
 	public static void main(String args[]) {
 		try {

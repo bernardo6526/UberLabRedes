@@ -109,12 +109,13 @@ class ClienteHandler extends Thread {
 			//---------------------------------------------------------
 			//processa o pacote recebido
 			String[] usuario = pktProcessor(pktRec);
-			//cria um pacote para receber infos do motorista mais próximo
-			DatagramPacket motoristaMaisProximo;
+			//cria uma variavel para marcar a posição do motorista mais próximo no array de apcotes
+			int motoristaMaisProximo=0;
 			// Procura por motorista mais próximo
 			boolean motoristaDisponivel = false;
 			while(!motoristaDisponivel){
 				double menorDist = 1000000;
+				int contador = 0;
 				for (DatagramPacket pacote : clientes) { 		      
 					String[] info = pktProcessor(pacote); // processa o pacote num array de string
 					//0idClient,1tipoUser,2ocupado,3latitude,4longitude
@@ -126,12 +127,22 @@ class ClienteHandler extends Thread {
 						//armazena o motorista mais proximo
 						if(dist < menorDist){
 							menorDist = dist;
-							motoristaMaisProximo = pacote;
+							motoristaMaisProximo = contador;
 						}
 					}
-
+					contador++;
 				}
 			}	
+
+			//inicia corrida marcando o motorista e o usuario como ocupados
+			/*depois disso é preciso fazer um codigo do motorista que fica ouvindo seu proprio status
+			  do servidor, e quando ele ver que ficou como ocupado irá receber mensagens do servidor com
+			  a localização do usuario
+			*/
+			DatagramPacket pacoteMotorista = clientes.get(motoristaMaisProximo);
+			clientes.set(motoristaMaisProximo, pacoteMotorista);
+
+
 
 			// CRIA UM PACOTE de RETORNO -> adicionar informações da porta nova que o client pode se conectar
 			String strMsgRet = "RETORNO - " + strMsg;

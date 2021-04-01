@@ -4,27 +4,35 @@ import java.io.*;
 import java.util.Scanner;
 
 public class Motorista {
+	//atributos do motorista
+	static int idClient= (int)(Math.random() * (10000 - 1 + 1) + 1);
+    static String tipoUser = "motorista";
+    static boolean ocupado = false;
+	static double latitude= (Math.random() * (20000 - 1 + 1) + 1);
+	static double longitude= (Math.random() * (20000 - 1 + 1) + 1);
+	static String nome= "Bruce Banner";
+
+	//infos para conectar ao servidor
+	static String IPServidor = "25.19.211.24"; // ENDEREÇO DO SERVIDOR
+	static int PortaServidor = 6000; //define qual porta do servidor será acessada
+	static int PortaCliente = 6002; //define qual porta será usada para se comunicar com o Servidor
+
+	//portas de conexao P2P
+	static int PortaUsuario = 6003; //define qual porta do cliente do Usuario será acessada
+	static int PortaMotorista = 6004;// define qual porta será usada para se comunicar com o Usuario
+	
 
     // MÉTODO PRINCIPAL DA CLASSE
 	public static void main(String args[]) {
-		try {
-
-            int idClient= (int)(Math.random() * (10000 - 1 + 1) + 1);
-            String tipoUser = "motorista";
-            boolean ocupado = false;
-			double latitude= (Math.random() * (20000 - 1 + 1) + 1);
-			double longitude= (Math.random() * (20000 - 1 + 1) + 1);
-			String nome= "Bruce Banner";
-            
+		try {            
             //System.out.println("sou o client: "+idClient);
 			Scanner sc = new Scanner(System.in); // Create a Scanner object
-			int comando;
 			boolean exit = false;
 			System.out.println("Iniciando o Uber "+tipoUser);
 
 			while (!exit) {
 				System.out.println("0-Sair\n1-Procurar Corrida\n");
-				comando = sc.nextInt();
+				int comando = sc.nextInt();
 				switch (comando) {
 				case 0:
 					exit = true;
@@ -37,22 +45,17 @@ public class Motorista {
 					System.out.println("comando não reconhecido");
 
 				}
+				System.out.println("teste");
 			}
 			sc.close();
-		} catch (Exception e) // SE OCORRER ALGUMA EXCESSAO, ENTAO DEVE SER TRATADA (AMIGAVELMENTE)
-		{
-			System.out.println("-C- O seguinte problema ocorreu : \n" + e.toString());
+		} catch (Exception e){  // SE OCORRER ALGUMA EXCESSAO, ENTAO DEVE SER TRATADA (AMIGAVELMENTE)
+			System.out.println("-C- O seguinte problema ocorreu na main : \n" + e.toString());
 		}
 	}
 
 	public static int conexaoInicial(int idClient, String tipoUser,boolean ocupado,double latitude,double longitude,String nome) throws Exception {
         System.out.println("Conectando ao servidor Uber...");
-		
-		// ENDEREÇO DO SERVIDOR
-		String IPServidor = "25.19.211.24";
-		int PortaServidor = 6000;
-		int PortaCliente = 6002;
-
+	
 		// ESTABELECE UM SERVIÇO UDP NA PORTA ESPECIFICADA
 		DatagramSocket ds = new DatagramSocket(PortaCliente);
 		System.out.println("-C- Cliente estabelecendo servico UDP (P" + PortaCliente + ")...");
@@ -87,14 +90,12 @@ public class Motorista {
 		return newPort; // retorna o valor da porta
 	}
 
-	public static int conexao(int idClient, String tipoUser,boolean ocupado, double latitude, double longitude, 
+	public static void conexao(int idClient, String tipoUser,boolean ocupado, double latitude, double longitude, 
 	String nome,int newPort) throws Exception {
         System.out.println("Procurando usuario...");
 		
-		// ENDEREÇO DO SERVIDOR
-		String IPServidor = "25.19.211.24";
+		//Define qual será a nova porta de acesso do servidor
 		int PortaServidor = newPort;
-		int PortaCliente = 6002;
 
 		// ESTABELECE UM SERVIÇO UDP NA PORTA ESPECIFICADA
 		DatagramSocket ds = new DatagramSocket(PortaCliente);
@@ -109,7 +110,7 @@ public class Motorista {
 		ds.send(pktEnvio);
 
         // CRIA UM PACOTE E RECEBE DADOS DO SERVIDOR
-		byte[] bytRec = new byte[100];
+		byte[] bytRec = new byte[1000]; // valor aumentado de 100 para 1000 pois o buffer estava estourando
 		DatagramPacket pktRec = new DatagramPacket(bytRec, bytRec.length);
 		System.out.println("-C- Recebendo mensagem...");
 		ds.receive(pktRec);
@@ -117,24 +118,104 @@ public class Motorista {
 		String strRet = new String(bytRec, 0, bytRec.length);
 
 		// PROCESSA O PACOTE RECEBIDO
+		strRet = strRet.trim();
 		System.out.println("-C- Mensagem recebida: " + strRet);
-		String[] info = strRet.split("/");
-		System.out.println("");
-
+		String[] usuario = strRet.split("/");
+		
+		//Conecta ao usuario
+		corrida(usuario);
 
 		// FINALIZA O SERVIÇO UDP
 		ds.close();
 		System.out.println("-C- Conexao finalizada...");
 
-		return 0; // retorna o valor da porta
 	}
+	
+	//Realiza a conexao com o usuario durante a corrida
+	//info 0idClient,1tipoUser,2ocupado,3latitude,4longitude,5nome
+	//6latDestino,7longDestino,8IpCliente,9PortaCliente
+	public static void corrida(String[] info){
+		try{
+			Scanner sc = new Scanner(System.in);
+			
+			String nome = info[5];
 
-	/*
-	public String lerPacote(byte[] pacote){
-		String retorno = "";
-		for(int i=0;i<pacote.length;i++){
-			retorno+=pacote[i];
+			//define a localizao atual do usuario
+			double latUsuario = Double.parseDouble(info[3]); 
+			double longUsuario = Double.parseDouble(info[4]);
+
+			//define o endereço de destino que o usuario deseja ser levado
+			double latDestino = Double.parseDouble(info[6]);
+			double longDestino = Double.parseDouble(info[7]);
+
+			String ipUsuario = info[8];
+			System.out.println("ipUsuario: "+ipUsuario);
+
+			while(true){
+				System.out.println("Aceitar a corrida de "+nome+"? \n y - aceitar , n - recusar");
+				String accept = sc.nextLine();
+				if(accept.equals("n")){
+					System.out.println("Corrida recusada.");
+					break;
+				}
+				System.out.println("Dirija-se para a localizacao de "+nome+": ("+latUsuario+","+longUsuario+")");
+				
+
+				// ESTABELECE UM SERVIÇO UDP NA PORTA ESPECIFICADA
+				DatagramSocket ds = new DatagramSocket(PortaMotorista);
+				//System.out.println("-C- Cliente estabelecendo servico UDP (P" + PortaMotorista + ")...");
+
+				double distanciaUsuario = calcDist(latUsuario,longUsuario);
+				while(distanciaUsuario > 2){
+					double velocidade = (Math.random() * (80 - 30 + 1) + 30);
+					int tempo = (int)(distanciaUsuario/velocidade);
+					if(tempo == 0) break;
+					System.out.println("Voce esta a "+tempo+" min de distancia de "+nome);
+					enviarPacote("O motorista esta a "+tempo+" min de distancia",ipUsuario,ds);
+					distanciaUsuario /= 2 ;
+				}				
+				enviarPacote("O motorista chegou",ipUsuario,ds);
+				enviarPacote("Iniciando viagem",ipUsuario,ds);
+
+				double preco = 0;
+				double distanciaDestino = calcDist(latDestino,longDestino);
+				while(distanciaDestino > 2){
+					double velocidade = (Math.random() * (80 - 30 + 1) + 30);
+					int tempo = (int)(distanciaDestino/velocidade);
+					if(tempo == 0) break;
+					System.out.println("Voce esta a "+tempo+" min de distancia do destino de "+nome);
+					enviarPacote("O seu destino esta a "+tempo+" min de distancia",ipUsuario,ds);
+					distanciaDestino /= 2 ;
+					preco+=4.59;
+				}
+
+				System.out.println("Preco da viagem: R$"+String.format("%.2f", preco));
+				enviarPacote("Pague R$"+preco+" ao motorista",ipUsuario,ds);
+				
+				ds.close();
+				break;
+			}
+			sc.close();
+		} catch (Exception e){  // SE OCORRER ALGUMA EXCESSAO, ENTAO DEVE SER TRATADA (AMIGAVELMENTE)
+			System.out.println("-C- O seguinte problema ocorreu na conexao da corrida : \n" + e.toString());
 		}
-		return retorno;
-	} */
+	}
+	
+	public static void enviarPacote(String strEnvio,String ipDestino,DatagramSocket ds) throws Exception{
+		// CRIA UM PACOTE E ENVIA PARA O USUARIO
+		byte[] bytEnvio = strEnvio.getBytes();
+		DatagramPacket pktEnvio = new DatagramPacket(bytEnvio, bytEnvio.length, InetAddress.getByName(ipDestino),
+				PortaUsuario);
+		//System.out.println("-C- Enviando mensagem (IP:" + IPServidor + " - P:" + PortaUsuario + ")...:" + strEnvio);
+		ds.send(pktEnvio);
+	} 
+
+	// Calcula a distancia entre usuario e motorista
+	public static double calcDist(double latDestino, double longDestino) {
+		double x1 = latDestino;
+		double y1 = longDestino;
+		double x2 = latitude;
+		double y2 = longitude;
+		return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
+	}
 }

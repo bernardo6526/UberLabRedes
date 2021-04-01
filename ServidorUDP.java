@@ -196,6 +196,7 @@ class ClienteHandler extends Thread {
 			int portaRet = pktRec.getPort();
 
 			//Cria um novo pacote com as informações de um outro cliente, para possibilitar a conexão P2P
+			System.out.println("$$$$enviando pacote para o motorista");
 			DatagramPacket pktEnv = pktCreator(usuario,ipRet,portaRet);
 			ds.send(pktEnv);
 
@@ -222,7 +223,8 @@ class ClienteHandler extends Thread {
 		for(int i=0;i<strCliente.length;i++){
 			strMsgRet+= strCliente[i]+"/";
 		}
-		strMsgRet+=ipCliente+"/"+portaCliente;
+		strMsgRet+=ipCliente.getHostAddress()+"/"+portaCliente;
+		System.out.println("$$$$$ipcliente "+ipCliente.getHostAddress());
 		byte[] bytRet = strMsgRet.getBytes();
 		DatagramPacket pktEnv = new DatagramPacket(bytRet, bytRet.length, ipDestino, portaDestino);
 
@@ -244,7 +246,6 @@ class ClienteHandler extends Thread {
 	// 0idClient,1tipoUser,2ocupado,3latitude,4longitude
 	// Calcula a distancia entre usuario e motorista
 	public static double calcDist(String[] usuario, String[] motorista) {
-		System.out.println("DEBUG tamanho do carai:" + usuario.length);
 		double x1 = Double.parseDouble(usuario[3]);
 		double y1 = Double.parseDouble(usuario[4]);
 		double x2 = Double.parseDouble(motorista[3]);

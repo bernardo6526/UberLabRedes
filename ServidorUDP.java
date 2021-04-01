@@ -129,14 +129,7 @@ class ClienteHandler extends Thread {
 			DatagramPacket pktRec = new DatagramPacket(bytRec, bytRec.length);
 			// System.out.println("-S- Recebendo mensagem...");
 			ds.receive(pktRec);
-			// PROCESSA O PACOTE RECEBIDO
-			bytRec = pktRec.getData();
-			String strMsg = new String(bytRec, 0, bytRec.length);
-			// System.out.println("-S- Mensagem recebida: " + strMsg);
-			// Pega dados do Cliente
-			InetAddress ipRet = pktRec.getAddress();
-			int portaRet = pktRec.getPort();
-			// ---------------------------------------------------------
+			
 			// requisita de forma sincronizada no servidor um motorista e muda seu status
 			// para ocupado
 			// passa como parâmetro o pacote com as informações do usuário que está
@@ -150,15 +143,12 @@ class ClienteHandler extends Thread {
 			}
 			System.out.println("DEBUG liberdade");
 
-			// CRIA UM PACOTE de RETORNO 
-			// pode se conectar
-			String strMsgRet = "RETORNO - " + strMsg;
-			byte[] bytRet = strMsgRet.getBytes();
-			DatagramPacket pktEnv = new DatagramPacket(bytRet, bytRet.length, ipRet, portaRet);
+			// Pega dados do Cliente
+			InetAddress ipRet = pktRec.getAddress();
+			int portaRet = pktRec.getPort();
 
-			// E ENVIA PARA O CLIENTE
-			System.out.println(
-					"-S- Enviando mensagem (IP:" + ipRet.getHostAddress() + " - P:" + portaRet + " )...:" + strMsgRet);
+			//Cria um novo pacote com as informações de um outro cliente, para possibilitar a conexão P2P
+			DatagramPacket pktEnv = pktCreator(pacoteMotorista,ipRet,portaRet);
 			ds.send(pktEnv);
 
 			// FINALIZA O SERVICO UDP
@@ -186,20 +176,9 @@ class ClienteHandler extends Thread {
 			// System.out.println("-S- Recebendo mensagem...");
 			ds.receive(pktRec);
 
-			// PROCESSA O PACOTE RECEBIDO
-			bytRec = pktRec.getData();
-			String strMsg = new String(bytRec, 0, bytRec.length);
-			// System.out.println("-S- Mensagem recebida: " + strMsg);
-
-			// Pega dados do Cliente
-			InetAddress ipRet = pktRec.getAddress();
-			int portaRet = pktRec.getPort();
-			// ---------------------------------------------------------
-
 			// requisita de forma sincronizada no servidor uma busca no array de corridas
 			// passa como parâmetro o pacote com as informações do motorista que está
 			// aguardando o usuário
-			System.out.println("voce foi preso");
 			boolean achouCorrida = false;
 			DatagramPacket usuario = null;
 			// Verifica no vetor de corridas se um Usuário já solicitou o motorista atual
@@ -212,14 +191,12 @@ class ClienteHandler extends Thread {
 				Thread.sleep(400);
 			}
 
-			// CRIA UM PACOTE de RETORNO -> adicionar informações da porta nova que o client
-			String strMsgRet = "RETORNO - " + strMsg;
-			byte[] bytRet = strMsgRet.getBytes();
-			DatagramPacket pktEnv = new DatagramPacket(bytRet, bytRet.length, ipRet, portaRet);
+			// Pega dados do Cliente
+			InetAddress ipRet = pktRec.getAddress();
+			int portaRet = pktRec.getPort();
 
-			// E ENVIA PARA O CLIENTE
-			System.out.println(
-					"-S- Enviando mensagem (IP:" + ipRet.getHostAddress() + " - P:" + portaRet + " )...:" + strMsgRet);
+			//Cria um novo pacote com as informações de um outro cliente, para possibilitar a conexão P2P
+			DatagramPacket pktEnv = pktCreator(usuario,ipRet,portaRet);
 			ds.send(pktEnv);
 
 			// FINALIZA O SERVICO UDP
@@ -230,6 +207,29 @@ class ClienteHandler extends Thread {
 		{
 			System.out.println("-S- O seguinte problema na conexao motorista ocorreu : \n" + e.toString());
 		}
+	}
+
+	//Cria um novo pacote com as informações de um outro cliente, para possibilitar a conexão P2P
+	public static DatagramPacket pktCreator(DatagramPacket outroCliente, InetAddress ipDestino, int portaDestino){
+		//Pega dados do novo cliente
+		String[] strCliente = pktProcessor(outroCliente);
+		InetAddress ipCliente = outroCliente.getAddress();
+		int portaCliente = outroCliente.getPort();
+
+		//0idClient,1tipoUser,2ocupado,3latitude,4longitude,5nome,6latDestino,7longDestino
+		//CRIA UM PACOTE de RETORNO
+		String strMsgRet = "";
+		for(int i=0;i<strCliente.length;i++){
+			strMsgRet+= strCliente[i]+"/";
+		}
+		strMsgRet+=ipCliente+"/"+portaCliente;
+		byte[] bytRet = strMsgRet.getBytes();
+		DatagramPacket pktEnv = new DatagramPacket(bytRet, bytRet.length, ipDestino, portaDestino);
+
+		// E ENVIA PARA O CLIENTE
+		System.out.println(
+				"-S- Enviando mensagem (IP:" + ipCliente.getHostAddress() + " - P:" + portaDestino + " )...:" + strMsgRet);
+		return pktEnv;
 	}
 
 	public static String[] pktProcessor(DatagramPacket pacote) {
@@ -268,7 +268,7 @@ class ClienteHandler extends Thread {
 		for (int i = 0; i < cpClientes.size(); i++) {
 			DatagramPacket pacote = cpClientes.get(i);
 			String[] info = pktProcessor(pacote); // processa o pacote num array de string
-			// 0idClient,1tipoUser,2ocupado,3latitude,4longitude
+			// 0idClient,1tipoUser,2ocupado,3latitude,4longitude,5nome
 			System.out.println("DEBUG 260");
 			System.out.println("DEBUG " + info[1] + "/" + info[2]);
 			// se achar motorista que não esteja ocupado calcula a distancia
@@ -309,7 +309,7 @@ class ClienteHandler extends Thread {
 			String[] info = pktProcessor(cpCorridas.get(i).get(0));
 
 			/*
-			 * OBS .: 0idClient,1tipoUser,2ocupado,3latitude,4longitude o par de conexao é
+			 * OBS .: 0idClient,1tipoUser,2ocupado,3latitude,4longitude,5nome o par de conexao é
 			 * no formato 0 motorista, 1 usuario
 			 */
 

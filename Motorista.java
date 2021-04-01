@@ -14,6 +14,7 @@ public class Motorista {
             boolean ocupado = false;
 			double latitude= (Math.random() * (20000 - 1 + 1) + 1);
 			double longitude= (Math.random() * (20000 - 1 + 1) + 1);
+			String nome= "Bruce Banner";
             
             //System.out.println("sou o client: "+idClient);
 			Scanner sc = new Scanner(System.in); // Create a Scanner object
@@ -29,8 +30,8 @@ public class Motorista {
 					exit = true;
 					break;
 				case 1:
-					int newPort = conexaoInicial(idClient,tipoUser,ocupado,latitude,longitude);
-					conexao(idClient,tipoUser,ocupado,latitude,longitude,newPort);
+					int newPort = conexaoInicial(idClient,tipoUser,ocupado,latitude,longitude,nome);
+					conexao(idClient,tipoUser,ocupado,latitude,longitude,nome,newPort);
 					break;
 				default:
 					System.out.println("comando não reconhecido");
@@ -44,7 +45,7 @@ public class Motorista {
 		}
 	}
 
-	public static int conexaoInicial(int idClient, String tipoUser,boolean ocupado,double latitude,double longitude) throws Exception {
+	public static int conexaoInicial(int idClient, String tipoUser,boolean ocupado,double latitude,double longitude,String nome) throws Exception {
         System.out.println("Conectando ao servidor Uber...");
 		
 		// ENDEREÇO DO SERVIDOR
@@ -57,7 +58,7 @@ public class Motorista {
 		System.out.println("-C- Cliente estabelecendo servico UDP (P" + PortaCliente + ")...");
 
 		// CRIA UM PACOTE E ENVIA PARA O SERVIDOR
-		String strEnvio = idClient+"/"+tipoUser+"/"+ocupado+"/"+latitude+"/"+longitude;
+		String strEnvio = idClient+"/"+tipoUser+"/"+ocupado+"/"+latitude+"/"+longitude+"/"+nome;
 		byte[] bytEnvio = strEnvio.getBytes();
 		DatagramPacket pktEnvio = new DatagramPacket(bytEnvio, bytEnvio.length, InetAddress.getByName(IPServidor),
 				PortaServidor);
@@ -86,7 +87,8 @@ public class Motorista {
 		return newPort; // retorna o valor da porta
 	}
 
-	public static int conexao(int idClient, String tipoUser,boolean ocupado, double latitude, double longitude, int newPort) throws Exception {
+	public static int conexao(int idClient, String tipoUser,boolean ocupado, double latitude, double longitude, 
+	String nome,int newPort) throws Exception {
         System.out.println("Procurando usuario...");
 		
 		// ENDEREÇO DO SERVIDOR
@@ -99,16 +101,14 @@ public class Motorista {
 		System.out.println("-C- Cliente estabelecendo servico UDP (P" + PortaCliente + ")...");
 
 		// CRIA UM PACOTE E ENVIA PARA O SERVIDOR
-		String strEnvio = idClient+"/"+tipoUser+"/"+ocupado+"/"+latitude+"/"+longitude;
+		String strEnvio = idClient+"/"+tipoUser+"/"+ocupado+"/"+latitude+"/"+longitude+"/"+nome;
 		byte[] bytEnvio = strEnvio.getBytes();
 		DatagramPacket pktEnvio = new DatagramPacket(bytEnvio, bytEnvio.length, InetAddress.getByName(IPServidor),
 				PortaServidor);
 		System.out.println("-C- Enviando mensagem (IP:" + IPServidor + " - P:" + PortaServidor + ")...:" + strEnvio);
 		ds.send(pktEnvio);
 
-        //paramos aqui
-
-		// CRIA UM PACOTE E RECEBE DADOS DO SERVIDOR
+        // CRIA UM PACOTE E RECEBE DADOS DO SERVIDOR
 		byte[] bytRec = new byte[100];
 		DatagramPacket pktRec = new DatagramPacket(bytRec, bytRec.length);
 		System.out.println("-C- Recebendo mensagem...");
@@ -118,6 +118,9 @@ public class Motorista {
 
 		// PROCESSA O PACOTE RECEBIDO
 		System.out.println("-C- Mensagem recebida: " + strRet);
+		String[] info = strRet.split("/");
+		System.out.println("");
+
 
 		// FINALIZA O SERVIÇO UDP
 		ds.close();

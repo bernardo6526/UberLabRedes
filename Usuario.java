@@ -17,6 +17,9 @@ public class Usuario {
             boolean ocupado = false;
 			double latitude= (Math.random() * (20000 - 1 + 1) + 1);
 			double longitude= (Math.random() * (20000 - 1 + 1) + 1);
+			String nome = "Natasha Romanoff";
+			double latDestino= (Math.random() * (20000 - 1 + 1) + 1);
+			double longDestino= (Math.random() * (20000 - 1 + 1) + 1);
             
             //System.out.println("sou o client: "+idClient);
 			Scanner sc = new Scanner(System.in); // Create a Scanner object
@@ -32,8 +35,8 @@ public class Usuario {
 					exit = true;
 					break;
 				case 1:
-					int newPort = conexaoInicial(idClient,tipoUser,ocupado,latitude,longitude);
-					conexao(idClient,tipoUser,ocupado,latitude,longitude,newPort);
+					int newPort = conexaoInicial(idClient,tipoUser,ocupado,latitude,longitude,nome,latDestino,longDestino);
+					conexao(idClient,tipoUser,ocupado,latitude,longitude,nome,latDestino,longDestino,newPort);
 					break;
 				default:
 					System.out.println("comando não reconhecido");
@@ -47,7 +50,8 @@ public class Usuario {
 		}
 	}
 
-	public static int conexaoInicial(int idClient, String tipoUser,boolean ocupado,double latitude,double longitude) throws Exception {
+	public static int conexaoInicial(int idClient, String tipoUser,boolean ocupado,double latitude,double longitude,
+	String nome, double latDestino, double longDestino) throws Exception {
         System.out.println("Conectando ao servidor Uber...");
 		
 		// ENDEREÇO DO SERVIDOR
@@ -60,7 +64,8 @@ public class Usuario {
 		System.out.println("-C- Cliente estabelecendo servico UDP (P" + PortaCliente + ")...");
 
 		// CRIA UM PACOTE E ENVIA PARA O SERVIDOR
-		String strEnvio = idClient+"/"+tipoUser+"/"+ocupado+"/"+latitude+"/"+longitude;
+		String strEnvio = idClient+"/"+tipoUser+"/"+ocupado+"/"+latitude+"/"+longitude+"/"+nome+
+		"/"+latDestino+"/"+longDestino;
 		byte[] bytEnvio = strEnvio.getBytes();
 		DatagramPacket pktEnvio = new DatagramPacket(bytEnvio, bytEnvio.length, InetAddress.getByName(IPServidor),
 				PortaServidor);
@@ -89,7 +94,7 @@ public class Usuario {
 		return newPort; // retorna o valor da porta
 	}
 
-	public static int conexao(int idClient, String tipoUser,boolean ocupado, double latitude, double longitude, int newPort) throws Exception {
+	public static int conexao(int idClient, String tipoUser,boolean ocupado, double latitude, double longitude,String nome, double latDestino, double longDestino, int newPort) throws Exception {
         System.out.println("Procurando motorista...");
 		
 		// ENDEREÇO DO SERVIDOR
@@ -102,7 +107,8 @@ public class Usuario {
 		System.out.println("-C- Cliente estabelecendo servico UDP (P" + PortaCliente + ")...");
 
 		// CRIA UM PACOTE E ENVIA PARA O SERVIDOR
-		String strEnvio = idClient+"/"+tipoUser+"/"+ocupado+"/"+latitude+"/"+longitude;
+		String strEnvio = idClient+"/"+tipoUser+"/"+ocupado+"/"+latitude+"/"+longitude+"/"+nome+
+		"/"+latDestino+"/"+longDestino;
 		byte[] bytEnvio = strEnvio.getBytes();
 		DatagramPacket pktEnvio = new DatagramPacket(bytEnvio, bytEnvio.length, InetAddress.getByName(IPServidor),
 				PortaServidor);

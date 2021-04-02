@@ -48,10 +48,10 @@ class ClienteHandler extends Thread {
 			String tipoUser = conexaoInicial(6000, newPort);
 
 			if (tipoUser.equals("usuario")) { // diferencia a conexao pelo tipo de user
-				System.out.println("DEBUG Conectando usuario");
+				//System.out.println("DEBUG Conectando usuario");
 				conexaoUsuario(newPort);
 			} else {
-				System.out.println("DEBUG Conectando motorista");
+				//System.out.println("DEBUG Conectando motorista");
 				conexaoMotorista(newPort);
 			}
 
@@ -97,7 +97,7 @@ class ClienteHandler extends Thread {
 			byte[] bytRet = strMsgRet.getBytes();
 			DatagramPacket pktEnv = new DatagramPacket(bytRet, bytRet.length, ipRet, portaRet);
 
-			System.out.println("DEBUG " + strMsgRet);
+			//System.out.println("DEBUG " + strMsgRet);
 
 			// E ENVIA PARA O CLIENTE
 			System.out.println(
@@ -142,7 +142,7 @@ class ClienteHandler extends Thread {
 					motoristaDisponivel = true;
 				Thread.sleep(400);
 			}
-			System.out.println("DEBUG liberdade");
+			//System.out.println("DEBUG liberdade");
 
 			// Pega dados do Cliente
 			InetAddress ipRet = pktRec.getAddress();
@@ -199,7 +199,6 @@ class ClienteHandler extends Thread {
 
 			// Cria um novo pacote com as informações de um outro cliente, para possibilitar
 			// a conexão P2P
-			System.out.println("$$$$enviando pacote para o motorista");
 			DatagramPacket pktEnv = pktCreator(usuario, ipRet, portaRet);
 			ds.send(pktEnv);
 
@@ -229,7 +228,6 @@ class ClienteHandler extends Thread {
 			strMsgRet += strCliente[i] + "/";
 		}
 		strMsgRet += ipCliente.getHostAddress() + "/" + portaCliente;
-		System.out.println("ENDERECO TROLL " + ipCliente.getHostAddress());
 		byte[] bytRet = strMsgRet.getBytes();
 		DatagramPacket pktEnv = new DatagramPacket(bytRet, bytRet.length, ipDestino, portaDestino);
 
@@ -275,8 +273,8 @@ class ClienteHandler extends Thread {
 			DatagramPacket pacote = cpClientes.get(i);
 			String[] info = pktProcessor(pacote); // processa o pacote num array de string
 			// 0idClient,1tipoUser,2ocupado,3latitude,4longitude,5nome
-			System.out.println("DEBUG 260");
-			System.out.println("DEBUG " + info[1] + "/" + info[2]);
+			//System.out.println("DEBUG 260");
+			//System.out.println("DEBUG " + info[1] + "/" + info[2]);
 			// se achar motorista que não esteja ocupado calcula a distancia
 			if (info[1].equals("motorista") && !Boolean.parseBoolean(info[2])) {
 				double dist = calcDist(usuario, info);

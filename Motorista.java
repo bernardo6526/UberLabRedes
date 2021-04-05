@@ -11,6 +11,7 @@ public class Motorista {
 	static double latitude = (Math.random() * (20000 - 1 + 1) + 1);
 	static double longitude = (Math.random() * (20000 - 1 + 1) + 1);
 	static String nome = "Bruce Banner";
+	static String placa = "BER-6526";
 
 	// infos para conectar ao servidor
 	static String IPServidor = "25.19.211.24"; // ENDEREÇO DO SERVIDOR
@@ -25,7 +26,6 @@ public class Motorista {
 	// MÉTODO PRINCIPAL DA CLASSE
 	public static void main(String args[]) {
 		try {
-			// System.out.println("sou o client: "+idClient);
 			boolean exit = false;
 			System.out.println("Iniciando o Uber " + tipoUser);
 
@@ -79,13 +79,11 @@ public class Motorista {
 		String strRet = new String(bytRec, 0, bytRec.length);
 
 		// PROCESSA O PACOTE RECEBIDO
-		// System.out.println("DEBUG |" + strRet+"|");
 		strRet = strRet.trim(); // remove os espaços em branco da string recebida
 		int newPort = Integer.parseInt(strRet);
 
 		// FINALIZA O SERVIÇO UDP
 		ds.close();
-		// System.out.println("-C- Conexao Inicial finalizada...");
 
 		return newPort; // retorna o valor da porta
 	}
@@ -129,7 +127,6 @@ public class Motorista {
 
 		// FINALIZA O SERVIÇO UDP
 		ds.close();
-		// System.out.println("-C- Conexao finalizada...");
 
 	}
 
@@ -149,7 +146,6 @@ public class Motorista {
 			double longDestino = Double.parseDouble(info[7]);
 
 			String ipUsuario = info[8];
-			// System.out.println("ipUsuario: "+ipUsuario);
 
 			while (true) {
 				sc.nextLine(); // desbugando o scan
@@ -164,9 +160,12 @@ public class Motorista {
 
 				// ESTABELECE UM SERVIÇO UDP NA PORTA ESPECIFICADA
 				DatagramSocket ds = new DatagramSocket(PortaMotorista);
-				// System.out.println("-C- Cliente estabelecendo servico UDP (P" +
-				// PortaMotorista + ")...");
+				Thread.sleep(800);
 
+				enviarPacote("Motorista encontrado!\n nome: "
+				 + Motorista.nome + "\n placa do veiculo: "+placa, ipUsuario, ds);
+
+				 // SIMULA UMA APROXIMACAO ENTRE O MOTORISTA E O USUARIO
 				double distanciaUsuario = calcDist(latUsuario, longUsuario);
 				while (distanciaUsuario > 2) {
 					double velocidade = (Math.random() * (80 - 30 + 1) + 30);
@@ -184,8 +183,8 @@ public class Motorista {
 				enviarPacote("Iniciando viagem", ipUsuario, ds);
 				Thread.sleep(400);
 
-				System.out
-						.println("Dirija-se para o destino de " + nome + ": (" + latDestino + "," + longDestino + ")");
+				System.out.println("Dirija-se para o destino de " +
+				 nome + ": (" + latDestino + "," + longDestino + ")");
 
 				double preco = 0;
 				double distanciaDestino = calcDist(latDestino, longDestino);
@@ -221,8 +220,8 @@ public class Motorista {
 		byte[] bytEnvio = strEnvio.getBytes();
 		DatagramPacket pktEnvio = new DatagramPacket(bytEnvio, bytEnvio.length, InetAddress.getByName(ipDestino),
 				PortaUsuario);
-		// System.out.println("-C- Enviando mensagem (IP:" + IPServidor + " - P:" +
-		// PortaUsuario + ")...:" + strEnvio);
+		 //System.out.println("-C- Enviando mensagem (IP:" + IPServidor + " - P:" +
+		 //PortaUsuario + ")...:" + strEnvio);
 		ds.send(pktEnvio);
 	}
 

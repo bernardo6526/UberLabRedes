@@ -60,7 +60,8 @@ class ClienteHandler extends Thread {
 		}
 	}
 
-	// Impede que as threads acessem simultaneamente a conexão inicial, prevenindo
+	// Realiza a conexao inicial e repassa uma nova porta para o cliente se conectar
+	// Synchronized Impede que as threads acessem simultaneamente a conexão inicial, prevenindo
 	// assim congestionamento na porta
 	public static synchronized String conexaoInicial(int ServerPort, int newPort) {
 		String tipoUser = ""; // inicializa a variavel tipoUsuario que será obtida com a info do pacote
@@ -97,7 +98,6 @@ class ClienteHandler extends Thread {
 			byte[] bytRet = strMsgRet.getBytes();
 			DatagramPacket pktEnv = new DatagramPacket(bytRet, bytRet.length, ipRet, portaRet);
 
-			//System.out.println("DEBUG " + strMsgRet);
 
 			// E ENVIA PARA O CLIENTE
 			System.out.println(
@@ -120,20 +120,15 @@ class ClienteHandler extends Thread {
 
 			// ESTABELECE UM SERVIÇO UDP NA NOVA PORTA ESPECIFICADA
 			DatagramSocket ds = new DatagramSocket(serverPort);
-			// System.out.println("-S- Servidor estabelecendo servico UDP (P:" + serverPort
-			// + ")...");
 
 			// CRIA UM PACOTE
 			byte[] bytRec = new byte[100];
+
 			// RECEBE DADOS DO CLIENTE
 			DatagramPacket pktRec = new DatagramPacket(bytRec, bytRec.length);
-			// System.out.println("-S- Recebendo mensagem...");
 			ds.receive(pktRec);
 
-			// requisita de forma sincronizada no servidor um motorista e muda seu status
-			// para ocupado
-			// passa como parâmetro o pacote com as informações do usuário que está
-			// procurando um motorista
+			// Enquanto não achar um motorista, continua procurando
 			boolean motoristaDisponivel = false;
 			DatagramPacket pacoteMotorista = null;
 			while (!motoristaDisponivel) {
@@ -168,8 +163,6 @@ class ClienteHandler extends Thread {
 
 			// ESTABELECE UM SERVIÇO UDP NA NOVA PORTA ESPECIFICADA
 			DatagramSocket ds = new DatagramSocket(serverPort);
-			// System.out.println("-S- Servidor estabelecendo servico UDP (P:" + serverPort
-			// + ")...");
 
 			// CRIA UM PACOTE
 			byte[] bytRec = new byte[100];
@@ -219,9 +212,7 @@ class ClienteHandler extends Thread {
 		String[] strCliente = pktProcessor(outroCliente);
 		InetAddress ipCliente = outroCliente.getAddress();
 		int portaCliente = outroCliente.getPort();
-
-		// usuario:0idClient,1tipoUser,2ocupado,3latitude,4longitude,5nome,6latDestino,7longDestino
-		// motorista://0idClient,1tipoUser,2ocupado,3latitude,4longitude,5nome
+		
 		// CRIA UM PACOTE de RETORNO
 		String strMsgRet = "";
 		for (int i = 0; i < strCliente.length; i++) {
@@ -237,6 +228,7 @@ class ClienteHandler extends Thread {
 		return pktEnv;
 	}
 
+	// Processa o pacote retornando as info em um vetor de strings
 	public static String[] pktProcessor(DatagramPacket pacote) {
 		byte[] dadosPacote = new byte[100];
 		dadosPacote = pacote.getData(); // preenche o vetor de bytes com os dados do pacote
@@ -246,8 +238,8 @@ class ClienteHandler extends Thread {
 		return info;
 	}
 
-	// 0idClient,1tipoUser,2ocupado,3latitude,4longitude
 	// Calcula a distancia entre usuario e motorista
+	// legenda 0idClient,1tipoUser,2ocupado,3latitude,4longitude
 	public static double calcDist(String[] usuario, String[] motorista) {
 		double x1 = Double.parseDouble(usuario[3]);
 		double y1 = Double.parseDouble(usuario[4]);
@@ -256,6 +248,7 @@ class ClienteHandler extends Thread {
 		return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
 	}
 
+	// Procura por um motorista mais proximo do usuario e cria um par de conexao entre eles
 	public static DatagramPacket achaMotorista(DatagramPacket pktRec) {
 		// Creating another linked list and copying
 		ArrayList<DatagramPacket> cpClientes = new ArrayList<DatagramPacket>();
@@ -266,17 +259,18 @@ class ClienteHandler extends Thread {
 		// cria uma variavel para marcar a posição do motorista mais próximo no array de
 		// pacotes
 		int motoristaMaisProximo = -1;
+		int posUsuario = -1;
 
-		// System.out.println("Preso no achaMotorista()");
+		// Itera o array de clientes conectados
 		double menorDist = 1000000;
 		for (int i = 0; i < cpClientes.size(); i++) {
 			DatagramPacket pacote = cpClientes.get(i);
 			String[] info = pktProcessor(pacote); // processa o pacote num array de string
-			// 0idClient,1tipoUser,2ocupado,3latitude,4longitude,5nome
-			//System.out.println("DEBUG 260");
-			//System.out.println("DEBUG " + info[1] + "/" + info[2]);
+			
 			// se achar motorista que não esteja ocupado calcula a distancia
+			// legenda 0idClient,1tipoUser,2ocupado,3latitude,4longitude,5nome
 			if (info[1].equals("motorista") && !Boolean.parseBoolean(info[2])) {
+				// Calcula a dist entre usuario e motorista
 				double dist = calcDist(usuario, info);
 				// armazena o motorista mais proximo
 				if (dist < menorDist) {
@@ -284,14 +278,29 @@ class ClienteHandler extends Thread {
 					motoristaMaisProximo = i;
 				}
 			}
+			if(info[0].equals(usuario[0])){ // salva a posicao do Usuario no vetor de clients
+				posUsuario = i;
+			}
 		}
 
 		DatagramPacket pacoteMotorista = null;
+		DatagramPacket pacoteUsuario = null;
 
-		if (motoristaMaisProximo != -1) {
-			// mudar o status do usuario e do motorista para ocupado
+		// se motorista encontrado
+		if (motoristaMaisProximo != -1 && posUsuario != -1) {
+			// pega o pacote do motorista mais próximo
 			pacoteMotorista = cpClientes.get(motoristaMaisProximo);
-			// clientes.set(motoristaMaisProximo, pacoteMotorista);
+			// pega o pacote do usuario atual
+			pacoteUsuario = cpClientes.get(posUsuario);
+
+			// muda o status do motorista para ocupado
+			pacoteMotorista = statusChanger(pacoteMotorista);
+			// muda o status do Usuario para ocupado
+			pacoteUsuario = statusChanger(pacoteUsuario);
+
+			// salva os pacotes editados na lista de clientes conectados
+			clientes.set(motoristaMaisProximo, pacoteMotorista);
+			clientes.set(posUsuario, pacoteUsuario);
 
 			// cria o par de conexao motorista-usuario
 			ArrayList<DatagramPacket> parConexao = new ArrayList<DatagramPacket>();
@@ -301,13 +310,40 @@ class ClienteHandler extends Thread {
 			// adicionar no vetor de corridas o par de conexao criado
 			corridas.add(parConexao);
 		}
-		return pacoteMotorista;
+		return pacoteMotorista; // retorna o pacote com informacoes do motorista para o usuario
 	}
 
+	// Recria o pacote com o status alterado
+	public static DatagramPacket statusChanger(DatagramPacket cliente){
+		// processa os dados do pacote
+		// Pega dados do novo cliente
+		String[] strCliente = pktProcessor(cliente);
+		InetAddress ipCliente = cliente.getAddress();
+		int portaCliente = cliente.getPort();
+			
+		// CRIA UM PACOTE de RETORNO
+		// legenda 0idClient,1tipoUser,2ocupado,3latitude,4longitude,5nome
+		String strMsgRet = "";
+		for (int i = 0; i < strCliente.length; i++) {
+			// Muda o Status do cliente para ocupado
+			if(strCliente[2].equals("false"))strCliente[2] = "true";
+			strMsgRet += strCliente[i] + "/";
+		}
+		strMsgRet += ipCliente.getHostAddress() + "/" + portaCliente;
+		byte[] bytRet = strMsgRet.getBytes();
+		DatagramPacket novoPacote = new DatagramPacket(bytRet, bytRet.length, ipCliente, portaCliente);
+
+		// Retorna o pacote alterado
+		return novoPacote;
+	}
+
+	// Procura o pacote do usuario no vetor de corridas (par de conexoes)
 	public static DatagramPacket achaUsuario(DatagramPacket pktRec, ArrayList<ArrayList<DatagramPacket>> cpCorridas) {
 		// processa o pacote recebido
 		String[] motorista = pktProcessor(pktRec);
 		DatagramPacket usuario = null;
+
+		// itera no vetor de corridas
 		for (int i = 0; i < cpCorridas.size(); i++) {
 			// processa o pacote do motorista num array de string
 			String[] info = pktProcessor(cpCorridas.get(i).get(0));
@@ -324,6 +360,6 @@ class ClienteHandler extends Thread {
 			}
 		}
 
-		return usuario;
+		return usuario; // retorna o pacote com informacoes do usuario para o motorista
 	}
 }

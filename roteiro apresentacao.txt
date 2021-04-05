@@ -1,0 +1,9 @@
+explicar a aplicação x
+mostrar as threads x
+explicar redirecionamento de conexao e pacotes salvos x
+explicar conexao usuario (método achaMotorista) x
+explicar conexao motorista (método achaUsuario) x
+explicar conexao P2P x
+mostrar semelhanças entre a classe Usuario e Motorista
+mostrar conexao(), mostrar corrida()
+mostrar a troca de mensagens

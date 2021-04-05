@@ -78,8 +78,6 @@ public class Usuario {
 		// PortaServidor + ")...:" + strEnvio);
 		ds.send(pktEnvio);
 
-		// paramos aqui
-
 		// CRIA UM PACOTE E RECEBE DADOS DO SERVIDOR
 		byte[] bytRec = new byte[100];
 		DatagramPacket pktRec = new DatagramPacket(bytRec, bytRec.length);
@@ -89,13 +87,11 @@ public class Usuario {
 		String strRet = new String(bytRec, 0, bytRec.length);
 
 		// PROCESSA O PACOTE RECEBIDO
-		// System.out.println("DEBUG |" + strRet+"|");
 		strRet = strRet.trim(); // remove os espaços em branco da string recebida
 		int newPort = Integer.parseInt(strRet);
 
 		// FINALIZA O SERVIÇO UDP
 		ds.close();
-		// System.out.println("-C- Conexao Inicial finalizada...");
 
 		return newPort; // retorna o valor da porta
 	}
@@ -104,13 +100,12 @@ public class Usuario {
 			String nome, double latDestino, double longDestino, int newPort) throws Exception {
 		System.out.println("Procurando motorista...");
 
-		// Define qual será a nova porta de acesso do servidor
+		// Cria a variável para receber a nova porta de acesso do servidor
 		int PortaServidor = newPort;
 
 		// ESTABELECE UM SERVIÇO UDP NA PORTA ESPECIFICADA
 		DatagramSocket ds = new DatagramSocket(PortaCliente);
-		// System.out.println("-C- Cliente estabelecendo servico UDP (P" + PortaCliente
-		// + ")...");
+	
 
 		// CRIA UM PACOTE E ENVIA PARA O SERVIDOR
 		String strEnvio = idClient + "/" + tipoUser + "/" + ocupado + "/" + latitude + "/" + longitude + "/" + nome
@@ -118,8 +113,6 @@ public class Usuario {
 		byte[] bytEnvio = strEnvio.getBytes();
 		DatagramPacket pktEnvio = new DatagramPacket(bytEnvio, bytEnvio.length, InetAddress.getByName(IPServidor),
 				PortaServidor);
-		// System.out.println("-C- Enviando mensagem (IP:" + IPServidor + " - P:" +
-		// PortaServidor + ")...:" + strEnvio);
 		ds.send(pktEnvio);
 
 		// CRIA UM PACOTE E RECEBE DADOS DO SERVIDOR
@@ -132,36 +125,29 @@ public class Usuario {
 
 		// PROCESSA O PACOTE RECEBIDO
 		strRet = strRet.trim();
-		// System.out.println("CABANDO-C- Mensagem recebida: " + strRet);
 		String[] motorista = strRet.split("/");
-
+		
+		// Envia as informações do motorista para realizar a conexão P2P
 		corrida(motorista);
 
 		// FINALIZA O SERVIÇO UDP
 		ds.close();
-		// System.out.println("-C- Conexao finalizada...");
 
 	}
 
 	public static void corrida(String[] motorista) {
 		try {
-			// ESTABELECE UM SERVIÇO UDP NA PORTA ESPECIFICADA
-			DatagramSocket ds = new DatagramSocket(PortaUsuario);
-			// CRIA UM PACOTE E RECEBE DADOS DO MOTORISTA
-			byte[] bytRec = new byte[1000]; // valor aumentado de 100 para 1000 pois o buffer estava estourando
-			DatagramPacket pktRec = new DatagramPacket(bytRec, bytRec.length);
-			// System.out.println("-C- Recebendo mensagem...");
-			ds.receive(pktRec);
-			bytRec = pktRec.getData();
-			String strRet = new String(bytRec, 0, bytRec.length);
-			strRet = strRet.trim();
-
+			// Trata as informações do motorista para efetuar a troca de mensagens
 			String ipMotorista = motorista[6];
 
-			// PROCESSA O PACOTE RECEBIDO
-			while (!receberPacote(ds).equals("Viagem encerrada"))
-				;
+			// ESTABELECE UM SERVIÇO UDP NA PORTA ESPECIFICADA
+			DatagramSocket ds = new DatagramSocket(PortaUsuario);
+
+			// Recebe os pacotes durante a corrida, até a viagem ser encerrada
+			while (!receberPacote(ds).equals("Viagem encerrada"));			;
 			Thread.sleep(400);
+
+			// Envia um pacote para o motorista
 			enviarPacote("O pagamento foi efetuado", ipMotorista, ds);
 			ds.close();
 		} catch (Exception e) { // SE OCORRER ALGUMA EXCESSAO, ENTAO DEVE SER TRATADA (AMIGAVELMENTE)
@@ -184,11 +170,14 @@ public class Usuario {
 		// CRIA UM PACOTE E RECEBE DADOS DO SERVIDOR
 		byte[] bytRec = new byte[100];
 		DatagramPacket pktRec = new DatagramPacket(bytRec, bytRec.length);
-		// System.out.println("-C- Recebendo mensagem...");
 		ds.receive(pktRec);
+
+		// PROCESSA O PACOTE
 		bytRec = pktRec.getData();
 		String strRet = new String(bytRec, 0, bytRec.length);
 		strRet = strRet.trim();
+
+		// IMPRIME A MENSAGEM 
 		System.out.println(strRet);
 		return strRet;
 	}
